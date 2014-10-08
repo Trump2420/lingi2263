@@ -8,13 +8,22 @@ Preparation_Words = set(["stir"])
 #Servings
 Serving_Words = set(["serving"])
 
+#Quantity
+Mass_Words = set(["ounce", "cup"])
+
 End_Sentence_Regex = r'[^!?\n<\.]*'
 Time_Regex = r'\b([0-9]+)( *)\b({})[s]?\b'.format("|".join(Time_Key_Words))
 Cooking_Time_Regex = r'\b({})(.*)({})({})'.format("|".join(Cooking_Words), Time_Regex, End_Sentence_Regex)
 Preparation_Time_Regex = r'\b({})\b(.*)({})'.format("|".join(Preparation_Words), End_Sentence_Regex)
-
+Ingredient_Regex = r'({})([s]?)( *)([A-Z ]*)(,|{})'.format("|".join(Mass_Words), End_Sentence_Regex)
 #Watch out!!!! -> The number may be in another sentence
-Servings_Regex = r'[0-9]+(.*)({})(.*)({})'.format("|".join(Serving_Words), End_Sentence_Regex)
+Servings_Regex = r'[0-9]+(.*)({})[s]?\b(.*)({})'.format("|".join(Serving_Words), End_Sentence_Regex)
+
+def findIngredients(textLine):
+	matches = re.finditer(Ingredient_Regex, textLine, re.IGNORECASE)
+
+	if matches:
+		return [match.group(4) for match in matches]
 
 def findServings(textLine):
 	matches = re.search(Servings_Regex, textLine)
@@ -48,8 +57,12 @@ def findTime(sentence):
 	if matches:
 		return matches.group()
 
-with open("recipe_book/main-dish_266.html", "r") as myfile:
+def stripHTML(line):
+	return re.sub(r"<[^>]*>", "", line)	
+
+with open("recipe_book/main-dish_516.html", "r") as myfile:
 	for line in myfile:
-		time = findServings(line)
+		line = stripHTML(line)
+		time = findIngredients(line)
 		if time:
 			print(time)
