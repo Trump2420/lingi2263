@@ -2,20 +2,23 @@ import re
 
 #Time related
 Time_Key_Words = set(["second", "sec", "s", "minute", "min", "m", "hour", "h"])
-Preparation_Words = set(["stir", "prep time", "preparation time", "preptime", "preparationtime", "shake"])
-Other_Cooking_Time_Related_Words = set(["bake", "sit"])
+Preparation_Words = set(["stir", "prep time", "preparation time", "preptime", "preparationtime", "shake", "beat", "whisk", "roll"])
+Other_Cooking_Time_Related_Words = set(["bake", "sit", "chill", "total time"])
 
 #Servings
 Serving_Words = set(["serving"])
 
 #Quantity
-Quantity_Words = set(["ounce", "cup", "teaspoon", "tea spoon", "slice", "tablespoon", "table spoon"])
+
+#We could add g and l, t
+Quantity_Words = set(["clove", "zest", "ounce", "cup", "teaspoon", "tsp", "tea spoon", "slice", "tablespoon", "table spoon", "spoon",
+						"gram", "kg", "kilo", "mg", "mili", "ml", "liter", "jar", "can", "oz"])
 
 End_Sentence_Regex = r'[^!?\n<\.]*'
 Time_Regex = r'\b([0-9]+|an|a)( *)\b({})[s]?\b'.format("|".join(Time_Key_Words))
 Cooking_Time_Regex = r'\b({})(.*)({})({})'.format("|".join(Other_Cooking_Time_Related_Words), Time_Regex, End_Sentence_Regex)
 Preparation_Time_Regex = r'({})(.*)'.format("|".join(Preparation_Words))
-Ingredient_Regex = r'([0-9]+)[ *]({})([s]?)( *)([A-Z ]*)(,|{})'.format("|".join(Quantity_Words), End_Sentence_Regex)
+Ingredient_Regex = r'([0-9]+/[0-9]+|[0-9]+)[ *]({})([s]?[\.]?)( *)([\w() ]*)(,|{})'.format("|".join(Quantity_Words), End_Sentence_Regex)
 #Watch out!!!! -> The number may be in another sentence	
 Servings_Regex = r'[0-9]+(.*)({})[s]?\b(.*)({})'.format("|".join(Serving_Words), End_Sentence_Regex)
 
@@ -65,9 +68,9 @@ def findTime(sentence):
 def stripHTML(line):
 	return re.sub(r"<[^>]*>", "", line)	
 
-with open("recipe_book/cocktail_3.html", "r") as myfile:
+with open("recipe_book/main-dish_266.html", "r") as myfile:
 	for line in myfile:
 		#line = stripHTML(line)
-		time = findPreparationTime(line)
+		time = findIngredients(line)
 		if time:
 			print(time)
