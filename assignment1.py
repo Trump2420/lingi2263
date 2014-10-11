@@ -1,5 +1,6 @@
 import re
 
+#LES INGREDIENTS SON FUCKED UP
 class RecipeParser():
 
 	#Time related
@@ -20,14 +21,14 @@ class RecipeParser():
 
 	#We could add g and l, t
 	Quantity_Words = set(["clove", "zest", "ounce", "cup", "teaspoon", "tsp", "tea spoon", "slice", "tablespoon", "table spoon", "spoon",
-							"gram", "kg", "kilo", "mg", "mili", "ml", "liter", "jar", "can", "oz", "scoop"])
+							"gram", "kg", "kilo", "mg", "ml", "liter", "jar", "can", "oz", "scoop", "stick", "miligram", "mililiter"])
 
 	End_Sentence_Regex = r'[^!?\n<\.]*'
 	Time_Regex = r'\b([0-9]+|an|a)( *)\b({})[s]?\b'.format("|".join(Time_Key_Words))
 	Cooking_Time_Regex = r'\b({})(.*)({})({})'.format("|".join(Other_Cooking_Time_Related_Words), Time_Regex, End_Sentence_Regex)
 	Preparation_Time_Regex = r'({})(.*)'.format("|".join(Preparation_Words))
 	Total_Time_Regex = r'({})(.*)'.format("|".join(Total_Time_Words))
-	Ingredient_Regex = r'([0-9]+/[0-9]+|[0-9]+)[ *]({})([s]?[\.]?)( *)([\w() ]*)(,|{})'.format("|".join(Quantity_Words), End_Sentence_Regex)
+	Ingredient_Regex = r'([0-9]+/[0-9]+|[0-9]+)[ *]({})([s]?[\.]?)( *)(\(.*\))? *([-\w() ]*)(,|{})'.format("|".join(Quantity_Words), End_Sentence_Regex)
 	#Watch out!!!! -> The number may be in another sentence	
 	Servings_Regex = r'[0-9]+\b( *)({})[s]?({})?|serve[s]? *:?;? *[0-9]+'.format("|".join(Serving_Words), End_Sentence_Regex)
 
@@ -36,12 +37,11 @@ class RecipeParser():
 
 	def findIngredients(self, textLine):
 		matches = re.finditer(self.Ingredient_Regex, textLine, re.IGNORECASE)
-
 		if matches:
-			ingredientName = 5
+			ingredientName = 6
 			quantityUnit = 2
 			ingredientQuantity = 1
-			return [(match.group(ingredientName), match.group(ingredientQuantity), match.group(quantityUnit)) for match in matches]
+			return set([(match.group(ingredientName), match.group(ingredientQuantity), match.group(quantityUnit)) for match in matches if match.group(ingredientName)])
 
 	def findServings(self, textLine):
 		matches = re.search(self.Servings_Regex, textLine, re.IGNORECASE)
@@ -83,6 +83,31 @@ class RecipeParser():
 
 class RecipeExtractor():
 
+	Conversion_Table = {"clove":("clove", 1),
+						 "zest":("zest", 1), 
+						 "ounce":("gram", 28.3495),
+						 "cup":("ml", 236.588),
+						 "teaspoon":("ml", 4.98),
+						 "tsp":("ml", 4.98),
+						 "tea spoon":("ml", 4.98),
+					     "slice":("slice", 1),
+						 "tablespoon":("ml", 14.79), 
+						 "table spoon":("ml", 14.79),
+						 "spoon":("ml", 14.79),
+						 "gram":("gram", 1),
+					     "kg":("kg", 1),
+						 "kilo":("kg", 1),
+						 "mg":("mg", 1),
+					     "miligram":("mg", 1),
+					     "mililiter":("ml", 1),
+						 "ml":("ml", 1),
+						 "liter":("l", 1),
+					     "jar":("ml", 500), #approx. (Mason jar)
+						 "can":("ml", 354.9),
+						 "oz":("ml", 29.57),
+						 "scoop":("ml", 70), #approx.
+						 "stick":("stick", 1)}
+
 	parser = RecipeParser()
 
 	def extractRecipe(self, filePath):
@@ -90,6 +115,7 @@ class RecipeExtractor():
 		preparationTime = (None, None)
 		cookingTime = (None, None)
 		totalTime = (None, None)
+		ingredients = set()
 
 		with open(filePath, "r") as myfile:
 			for line in myfile:
@@ -99,7 +125,10 @@ class RecipeExtractor():
 				preparationTimeFound = self.parser.findPreparationTime(line)
 				cookingTimeFound = self.parser.findCookingTime(line)
 				totalTimeFound = self.parser.findTotalTime(line)
-				
+				ingredientsFound = self.parser.findIngredients(line)
+
+				if ingredientsFound:
+					ingredients |= ingredientsFound
 				if cookingTimeFound:
 					cookingTime = self.addTime(cookingTime, cookingTimeFound)
 				if totalTimeFound:
@@ -112,9 +141,24 @@ class RecipeExtractor():
 		if not totalTime[0]:
 			totalTime = self.addTime(cookingTime, preparationTime)
 
-		recipe = "nb_servings {}\nprep_time {} {}\ntotal_time {} {}".format(servings, preparationTime[0], preparationTime[1], totalTime[0], totalTime[1])
+		recipesIngredients = ", ".join([ingredient[0] for ingredient in ingredients])
+		recipesIngredientsOrigQuantity = " ".join([ingredient[1] for ingredient in ingredients])
+		recipesIngredientsOrigUnit = " ".join([ingredient[2] for ingredient in ingredients])
+
+		recipesIngredientsMetricQuantity = " ".join([str(self.convertToMetric(ingredient)[1]) for ingredient in ingredients])
+		recipesIngredientsMetricUnit = " ".join([self.convertToMetric(ingredient)[2] for ingredient in ingredients])
+		
+		recipe = "ingredients {}\norig_quantity {}\norig_unit {}\nmetric_qunatity {}\nmetric_unit {}\nnb_servings {}\nprep_time {} {}\ntotal_time {} {}".format(
+			recipesIngredients, recipesIngredientsOrigQuantity, recipesIngredientsOrigUnit, recipesIngredientsMetricQuantity, recipesIngredientsMetricUnit,
+			servings, preparationTime[0], preparationTime[1], totalTime[0], totalTime[1])
 
 		return recipe
+
+	def convertToMetric(self, ingredient):
+		if ingredient[2].lower() in self.Conversion_Table:
+			return (ingredient[0], eval(ingredient[1])*self.Conversion_Table[ingredient[2].lower()][1], self.Conversion_Table[ingredient[2].lower()][0])
+		else:
+			return ingredient
 
 	def addTime(self, time1, time2):
 		t1 = 0
@@ -138,4 +182,4 @@ class RecipeExtractor():
 if __name__ == "__main__":
 	recipeExtractor = RecipeExtractor()
 
-	print(recipeExtractor.extractRecipe("recipe_book/dessert_413.html"))
+	print(recipeExtractor.extractRecipe("recipe_book/dessert_480.html"))
