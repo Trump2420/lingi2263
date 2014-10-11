@@ -15,7 +15,7 @@ class RecipeParser():
 	Other_Cooking_Time_Related_Words = set(["bake", "sit", "chill", "cool", "stand", "freeze", "rest", "refrigerate", "cook", "boil", "grill"])
 
 	#Servings
-	Serving_Words = set(["serving", "serve"])
+	Serving_Words = set(["serving", "serve", "portion", "portions for", "portion for"])
 
 	#Quantity
 
@@ -30,7 +30,7 @@ class RecipeParser():
 	Total_Time_Regex = r'({})(.*)'.format("|".join(Total_Time_Words))
 	Ingredient_Regex = r'([0-9]+/[0-9]+|[0-9]+)[ *]({})([s]?[\.]?)( *)(\(.*\))? *([-\w() ]*)(,|{})'.format("|".join(Quantity_Words), End_Sentence_Regex)
 	#Watch out!!!! -> The number may be in another sentence	
-	Servings_Regex = r'[0-9]+\b( *)({})[s]?({})?|serve[s]? *:?;? *[0-9]+'.format("|".join(Serving_Words), End_Sentence_Regex)
+	Servings_Regex = r'[0-9]+\b( *)({})[s]?({})?|({})[s]? *:?;? *[0-9]+'.format("|".join(Serving_Words), End_Sentence_Regex, "|".join(Serving_Words))
 
 	def findTotalTime(self, textLine):
 		return self._findActionTime(textLine, self.Total_Time_Regex)
@@ -141,7 +141,7 @@ class RecipeExtractor():
 		if not totalTime[0]:
 			totalTime = self.addTime(cookingTime, preparationTime)
 
-		recipesIngredients = ", ".join([ingredient[0] for ingredient in ingredients])
+		recipesIngredients = ";;; ".join([ingredient[0] for ingredient in ingredients])
 		recipesIngredientsOrigQuantity = " ".join([ingredient[1] for ingredient in ingredients])
 		recipesIngredientsOrigUnit = " ".join([ingredient[2] for ingredient in ingredients])
 
@@ -182,4 +182,4 @@ class RecipeExtractor():
 if __name__ == "__main__":
 	recipeExtractor = RecipeExtractor()
 
-	print(recipeExtractor.extractRecipe("recipe_book/dessert_480.html"))
+	print(recipeExtractor.extractRecipe("recipe_book/dessert_120.html"))
