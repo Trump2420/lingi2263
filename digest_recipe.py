@@ -1,6 +1,5 @@
 import re
 
-#LES INGREDIENTS SON FUCKED UP
 class RecipeParser():
 
 	#Time related
@@ -29,7 +28,7 @@ class RecipeParser():
 	Preparation_Time_Regex = r'({})(.*)'.format("|".join(Preparation_Words))
 	Total_Time_Regex = r'({})(.*)'.format("|".join(Total_Time_Words))
 	Ingredient_Regex = r'([0-9]+/[0-9]+|[0-9]+)[ *]({})([s]?[\.]?)( *)(\(.*\))? *([-\w() ]*)(,|{})'.format("|".join(Quantity_Words), End_Sentence_Regex)
-	#Watch out!!!! -> The number may be in another sentence	
+	#Watch out!!!! -> The number may be in another sentence
 	Servings_Regex = r'[0-9]+\b( *)({})[s]?({})?|({})[s]? *:?;? *[0-9]+'.format("|".join(Serving_Words), End_Sentence_Regex, "|".join(Serving_Words))
 
 	def findTotalTime(self, textLine):
@@ -120,7 +119,7 @@ class RecipeExtractor():
 		with open(filePath, "r") as myfile:
 			for line in myfile:
 				line = self.parser.stripSpan(line)
-				#If more than one serving is detected, the previous one is overided
+				#If more than one serving is detected, the previous one is overiden
 				servingsFound = self.parser.findServings(line)
 				preparationTimeFound = self.parser.findPreparationTime(line)
 				cookingTimeFound = self.parser.findCookingTime(line)
@@ -138,10 +137,10 @@ class RecipeExtractor():
 				if servingsFound:
 					servings = servingsFound
 
-		if not totalTime[0]:
+		if not totalTime[0] and preparationTime[0]:
 			totalTime = self.addTime(cookingTime, preparationTime)
 
-		recipesIngredients = ";;; ".join([ingredient[0] for ingredient in ingredients])
+		recipesIngredients = " ".join([ingredient[0] for ingredient in ingredients])
 		recipesIngredientsOrigQuantity = " ".join([ingredient[1] for ingredient in ingredients])
 		recipesIngredientsOrigUnit = " ".join([ingredient[2] for ingredient in ingredients])
 
@@ -180,6 +179,12 @@ class RecipeExtractor():
 		return t
 
 if __name__ == "__main__":
-	recipeExtractor = RecipeExtractor()
+	import sys
 
-	print(recipeExtractor.extractRecipe("recipe_book/dessert_120.html"))
+	recipeExtractor = RecipeExtractor()
+	if(len(sys.argv) == 3):
+		recipe = recipeExtractor.extractRecipe(sys.argv[1])
+		with open(argv[2], "w") as output:
+			output.write(recipe)
+	else:
+		print("Expected format: digest_recipe.py input_file.txt output_file.txt")
