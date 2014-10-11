@@ -10,7 +10,8 @@ class RecipeParser():
 	Time_Key_Words = Seconds_Key_Words | Minutes_Key_Words | Hours_Key_Words
 
 	Preparation_Words = set(["stir", "prep time", "preparation time", "preptime", "preparationtime", "shake", "beat", "whisk", "roll"])
-	Other_Cooking_Time_Related_Words = set(["bake", "sit", "chill", "total time", "cool", "stand", "freeze", "rest", "refrigerate", "cook"])
+	Total_Time_Words = set(["total time", "total_time", "totaltime"])
+	Other_Cooking_Time_Related_Words = set(["bake", "sit", "chill", "cool", "stand", "freeze", "rest", "refrigerate", "cook", "boil", "grill"])
 
 	#Servings
 	Serving_Words = set(["serving", "serve"])
@@ -25,9 +26,13 @@ class RecipeParser():
 	Time_Regex = r'\b([0-9]+|an|a)( *)\b({})[s]?\b'.format("|".join(Time_Key_Words))
 	Cooking_Time_Regex = r'\b({})(.*)({})({})'.format("|".join(Other_Cooking_Time_Related_Words), Time_Regex, End_Sentence_Regex)
 	Preparation_Time_Regex = r'({})(.*)'.format("|".join(Preparation_Words))
+	Total_Time_Regex = r'({})(.*)'.format("|".join(Total_Time_Words))
 	Ingredient_Regex = r'([0-9]+/[0-9]+|[0-9]+)[ *]({})([s]?[\.]?)( *)([\w() ]*)(,|{})'.format("|".join(Quantity_Words), End_Sentence_Regex)
 	#Watch out!!!! -> The number may be in another sentence	
 	Servings_Regex = r'[0-9]+\b( *)({})[s]?({})?|serve[s]? *:?;? *[0-9]+'.format("|".join(Serving_Words), End_Sentence_Regex)
+
+	def findTotalTime(self, textLine):
+		return self._findActionTime(textLine, self.Total_Time_Regex)
 
 	def findIngredients(self, textLine):
 		matches = re.finditer(self.Ingredient_Regex, textLine, re.IGNORECASE)
@@ -68,6 +73,8 @@ class RecipeParser():
 		matches = re.search(self.Time_Regex, sentence, re.IGNORECASE)
 		if matches:
 			number = matches.group(1)
+			if "a" in number:
+				number = "1"
 			unit = matches.group(3)
 			return (number, unit)
 
@@ -81,6 +88,8 @@ class RecipeExtractor():
 	def extractRecipe(self, filePath):
 		servings = None
 		preparationTime = (None, None)
+		cookingTime = (None, None)
+		totalTime = (None, None)
 
 		with open(filePath, "r") as myfile:
 			for line in myfile:
@@ -88,12 +97,22 @@ class RecipeExtractor():
 				#If more than one serving is detected, the previous one is overided
 				servingsFound = self.parser.findServings(line)
 				preparationTimeFound = self.parser.findPreparationTime(line)
+				cookingTimeFound = self.parser.findCookingTime(line)
+				totalTimeFound = self.parser.findTotalTime(line)
+				
+				if cookingTimeFound:
+					cookingTime = self.addTime(cookingTime, cookingTimeFound)
+				if totalTimeFound:
+					totalTime = (self._ConvertToMinutes(totalTimeFound), "min")
 				if preparationTimeFound:
 					preparationTime = self.addTime(preparationTime, preparationTimeFound)
 				if servingsFound:
 					servings = servingsFound
 
-		recipe = "prep_time {} {}\nnb_servings {}".format(preparationTime[0], preparationTime[1], servings)
+		if not totalTime[0]:
+			totalTime = self.addTime(cookingTime, preparationTime)
+
+		recipe = "nb_servings {}\nprep_time {} {}\ntotal_time {} {}".format(servings, preparationTime[0], preparationTime[1], totalTime[0], totalTime[1])
 
 		return recipe
 
@@ -106,17 +125,17 @@ class RecipeExtractor():
 		if time2[0]:
 			t2 = self._ConvertToMinutes(time2)
 
-		return t1 + t2, "min."
+		return t1 + t2, "min"
 
 	def _ConvertToMinutes(self, time):
 		t = int(time[0])
 		if time[1] in RecipeParser.Seconds_Key_Words:
-			t = time[0] / 60
+			t = t / 60
 		elif time[1] in RecipeParser.Hours_Key_Words:
-			t = time[0] * 60
+			t = t * 60
 		return t
 
 if __name__ == "__main__":
 	recipeExtractor = RecipeExtractor()
 
-	print(recipeExtractor.extractRecipe("recipe_book/main-dish_130.html"))
+	print(recipeExtractor.extractRecipe("recipe_book/dessert_413.html"))
