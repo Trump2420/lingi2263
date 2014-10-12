@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import re
 
 class RecipeParser():
@@ -9,27 +11,26 @@ class RecipeParser():
 
 	Time_Key_Words = Seconds_Key_Words | Minutes_Key_Words | Hours_Key_Words
 
-	Preparation_Words = set(["stir", "prep time", "preparation time", "preptime", "preparationtime", "shake", "beat", "whisk", "roll"])
-	Total_Time_Words = set(["total time", "total_time", "totaltime"])
-	Other_Cooking_Time_Related_Words = set(["bake", "sit", "chill", "cool", "stand", "freeze", "rest", "refrigerate", "cook", "boil", "grill"])
+	Preparation_Key_Words = set(["stir", "prep time", "preparation time", "preptime", "preparationtime", "shake", "beat", "whisk", "roll"])
+	Total_Time_Key_Words = set(["total time", "total_time", "totaltime"])
+	Other_Cooking_Time_Related_Key_Words = set(["bake", "sit", "chill", "cool", "stand", "freeze", "rest", "refrigerate", "cook", "boil", "grill"])
 
 	#Servings
-	Serving_Words = set(["serving", "serve", "portion", "portions for", "portion for"])
+	Serving_Key_Words = set(["serving", "serve", "portion", "portions for", "portion for"])
 
 	#Quantity
-
 	#We could add g and l, t
-	Quantity_Words = set(["clove", "zest", "ounce", "cup", "teaspoon", "tsp", "tea spoon", "slice", "tablespoon", "table spoon", "spoon",
+	Quantity_Key_Words = set(["clove", "zest", "ounce", "cup", "teaspoon", "tsp", "tea spoon", "slice", "tablespoon", "table spoon", "spoon",
 							"gram", "kg", "kilo", "mg", "ml", "liter", "jar", "can", "oz", "scoop", "stick", "miligram", "mililiter"])
 
 	End_Sentence_Regex = r'[^!?\n<\.]*'
 	Time_Regex = r'\b([0-9]+|an|a)( *)\b({})[s]?\b'.format("|".join(Time_Key_Words))
-	Cooking_Time_Regex = r'\b({})(.*)({})({})'.format("|".join(Other_Cooking_Time_Related_Words), Time_Regex, End_Sentence_Regex)
-	Preparation_Time_Regex = r'({})(.*)'.format("|".join(Preparation_Words))
-	Total_Time_Regex = r'({})(.*)'.format("|".join(Total_Time_Words))
-	Ingredient_Regex = r'([0-9]+/[0-9]+|[0-9]+)[ *]({})([s]?[\.]?)( *)(\(.*\))? *([-\w() ]*)(,|{})'.format("|".join(Quantity_Words), End_Sentence_Regex)
+	Cooking_Time_Regex = r'\b({})(.*)({})({})'.format("|".join(Other_Cooking_Time_Related_Key_Words), Time_Regex, End_Sentence_Regex)
+	Preparation_Time_Regex = r'({})(.*)'.format("|".join(Preparation_Key_Words))
+	Total_Time_Regex = r'({})(.*)'.format("|".join(Total_Time_Key_Words))
+	Ingredient_Regex = r'([0-9]+/[0-9]+|[0-9]+)[ *]({})([s]?[\.]?)( *)(\(.*\))? *([-\w() ]*)(,|{})'.format("|".join(Quantity_Key_Words), End_Sentence_Regex)
 	#Watch out!!!! -> The number may be in another sentence
-	Servings_Regex = r'[0-9]+\b( *)({})[s]?({})?|({})[s]? *:?;? *[0-9]+'.format("|".join(Serving_Words), End_Sentence_Regex, "|".join(Serving_Words))
+	Servings_Regex = r'[0-9]+\b( *)({})[s]?({})?|({})[s]? *:?;? *[0-9]+'.format("|".join(Serving_Key_Words), End_Sentence_Regex, "|".join(Serving_Key_Words))
 
 	def findTotalTime(self, textLine):
 		return self._findActionTime(textLine, self.Total_Time_Regex)
@@ -184,7 +185,7 @@ if __name__ == "__main__":
 	recipeExtractor = RecipeExtractor()
 	if(len(sys.argv) == 3):
 		recipe = recipeExtractor.extractRecipe(sys.argv[1])
-		with open(argv[2], "w") as output:
+		with open(sys.argv[2], "w") as output:
 			output.write(recipe)
 	else:
-		print("Expected format: digest_recipe.py input_file.txt output_file.txt")
+		print("Expected format: ./digest_recipe.py input_file.txt output_file.txt")
