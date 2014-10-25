@@ -1,12 +1,21 @@
-import sys, json
+import sys, json, pickle
+import csv
 
 def load_obj(name):
-    with open(name, 'r') as fp:
-        return json.load(fp)
+    reader = csv.reader(open(name, 'r'))
+    return dict(x for x in reader)
+    # with open(name, 'rb') as fp:
+    #     return pickle.load(fp)
 
 def save_obj(obj, name ):
-    with open(name, 'w') as fp:
-        json.dump(obj, fp)
+    writer = csv.writer(open(name, 'w'))
+    for key, value in obj.items():
+        writer.writerow([key,value])
+    # listWriter = csv.DictWriter(open(name, 'wb'), fieldnames=obj[obj.keys()[0]].keys(), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    # for a in obj:
+    #     listWriter.writerow(a)
+    # with open(name, 'wb') as fp:
+    #     pickle.dump(obj, fp, pickle.HIGHEST_PROTOCOL)
 
 def load_lexicon(f):
     return load_obj(f)

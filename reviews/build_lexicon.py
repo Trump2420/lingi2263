@@ -23,6 +23,9 @@ def build_lexicon_from_sentence(s):
     start_sentence = True
     words = s.split('\t')
     skip = "(,)"
+    is_compound_word = False
+    compound_word = ""
+
     for w in words:
         w = w.strip()
         if start_sentence and w not in end_sentence:
@@ -36,9 +39,18 @@ def build_lexicon_from_sentence(s):
             w = 'DATE'
         if w in end_sentence:
             start_sentence = True
+        if w.startswith("_"):
+            is_compound_word = True
+        if is_compound_word:
+            compound_word += w
+        if w.endswith("_"):
+            is_compound_word = False
+            w = compound_word
+            compound_word = ""
         if w not in lexicon:
             lexicon[w] = 0
-        lexicon[w] += 1
+        if not is_compound_word:
+            lexicon[w] += 1
 
     return lexicon
 
