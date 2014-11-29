@@ -46,10 +46,11 @@ def bag_of_words(f, lexicon):
     vectors = {} # word => {w1: occ1, w2: occ2}
     with open(f, 'r') as f:
         pentagrams = f.readlines()
-        print(len(pentagrams))
+        # print(len(pentagrams))
         for pentagram in pentagrams:
             number_occurences = int(pentagram[0])
             words = pentagram.split()[1:]
+            words = [w for w in words if w in lexicon]
 
             for currentWord in words:
                 if currentWord not in vectors:
@@ -141,27 +142,40 @@ def printBagOfWordsOfFurnaceAndFireworks(bag):
     print("furnace: {}".format(bag["furnace"]))
 
 def print10MostSimilarQueries(descriptions, lexicon):
-    words = ["happy", "italy", "jump", "japan", "plane", "good", "planes", "october"]
+    words = ["happy", "italy", "jump", "japan", "plane", "planes", "october", "good"]
 
     for word in words:
         similarWords = [(sim(descriptions, word, w), w) for w in lexicon]
-        similarWords.sort()
+        similarWords.sort(key=lambda x: -x[0])
         for simWord in similarWords[:11]:
-            print(simWord)
+            print("{}: {}".format(simWord[1], simWord[0]))
+        print()
+
+def similarityScoresWithChristmas(lexicon, descriptions):
+    for w in lexicon:
+        print("{}: {}".format(w, sim(descriptions, "christmas", w)))
+
+def similarityScoresWithGift(lexicon, descriptions):
+    for w in lexicon:
+        print("{}: {}".format(w, sim(descriptions, "gift", w)))
     
 
 if __name__ == '__main__':
-    lex = build_lexicon("w5_.txt", 250)
-    save_obj(lex, "lexicon.pkl")
-    # lex = loadLexique() 
+    # lex = build_lexicon("w5_.txt", 250)
+    # save_obj(lex, "lexicon.pkl")
+    lex = loadLexique() 
 
-    bag = bag_of_words(sys.argv[1], lex)
-    save_obj(bag, "bag.pkl")
-    # bag = load_obj(sys.argv[2])
+    # bag = bag_of_words(sys.argv[1], lex)
+    # save_obj(bag, "bag.pkl")
+    bag = load_obj(sys.argv[2])
+
+    # print(bag['the'])
+    # exit(0)
 
     descriptions = tf_idf(bag, lex)
     save_obj(descriptions, "descriptions.pkl")
     # descriptions = load_obj("descriptions.pkl")
+    print(sim(descriptions, "sister", "sister"))
 
     # top20WordsLexicon(lex)
 
@@ -169,4 +183,6 @@ if __name__ == '__main__':
 
     # printTDIDFOfFurnaceAndFireworks(descriptions)
 
-    print10MostSimilarQueries(descriptions, lex)
+    # print10MostSimilarQueries(descriptions, lex)
+
+    similarityScoresWithChristmas(lex, descriptions)
